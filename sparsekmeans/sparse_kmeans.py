@@ -58,7 +58,7 @@ def predict_labels(X: gb.Matrix, centroids: gb.Matrix, is_centroid_dense: bool, 
     c_squared_norms = squared_row_norms(centroids, n_threads)
     XCt = Matrix(dtypes.FP64, nrows=n_samples, ncols=n_clusters)
 
-    # For X * Ct, we use CSR x (fullc or CSC) for the best efficiency.
+    # For X * Ct, we use CSR (for X format) x (fullc or CSC for C format) for the best efficiency.
     # We use row format to store centroids in other places, so must convert them here to column format.
     if is_centroid_dense:
         centroids = centroids.ss.export("fullc")
@@ -241,7 +241,6 @@ class SparseKmeans:
         # Allowing the kmeans procedure to allocate and initialize internal variables
         self._setup_internal_state(X)
 
-        # Calculate the mean feature variance
         self.mean_feature_variance = self._cal_feature_variance(X)
         if self.mean_feature_variance <= sys.float_info.min:
             return

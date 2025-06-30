@@ -63,9 +63,8 @@ import urllib.request
 import bz2
 
 with urllib.request.urlopen("https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/news20_tfidf_train.svm.bz2") as r:
-    r = bz2.BZ2File(r)
-    r = io.TextIOWrapper(io.BufferedReader(r))
-    _, X = svm_read_problem(r, return_scipy=True)
+    with bz2.open(r, 'rt') as f:
+        _, X = svm_read_problem(f, return_scipy=True)
 
 kmeans = LloydKmeans(n_clusters=100)
 labels = kmeans.fit(X)

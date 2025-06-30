@@ -16,7 +16,7 @@ setup(
     packages=PACKAGE_DIR,
     version=VERSION,
     python_requires=">=3.10",
-    install_requires=["numpy","python-graphblas","scipy","libsvm-official>=3.36.0"],
+    install_requires=["numpy","python-graphblas","scipy"],
     description="",
     long_description_content_type="",
     author="Chih-Jen Lin, He-Zhe Lin, Khoi Nguyen Pham Dang",
