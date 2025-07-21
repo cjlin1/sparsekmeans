@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import scipy.sparse as sparse
 import time
+import warnings
 from typing import Union
 
 import graphblas as gb
@@ -44,7 +45,7 @@ def check_centroids_density(centroids: gb.Matrix):
         is_centroid_dense = False
         centroids_density = centroids.nvals / (centroids.nrows * centroids.ncols)
         if centroids_density > gamma:
-            is_centroid_dense = False
+            is_centroid_dense = True
             centroids(mask=~centroids.S) << 0
 
     return centroids, is_centroid_dense
@@ -197,6 +198,13 @@ class SparseKmeans:
         n_local_trials = 2 + int(np.log(n_clusters))
 
         for j in range(1, n_clusters):
+
+            if current_potential < 1e-12:
+                warnings.warn(f"The specified number of clusters is larger than the number of distinct points.\nChange the number of clusters to the number of distinct points.", category=UserWarning)
+                centroids = centroids[:j, :]
+                self.n_clusters = j
+                break
+
             # Choose centroids candidates by sampling with probability smallest_sq_dist/current_potential, where
             # current_potential is the sum of smallest_sq_dist
             rand_vals = self.random_state.uniform(size=n_local_trials) * current_potential
@@ -343,20 +351,29 @@ class SparseKmeans:
         empty_clusters = np.where(cluster_sizes == 0)[0]
         n_empty = len(empty_clusters)
 
-        # To handle empty clusters, we follow the setting in scikit-learn
-        # We consider points with the largest distances to their assigned clusters, and reassign them to the empty clusters
+        # To handle empty clusters, we consider points with the largest distances to their assigned clusters, and reassign them to the empty clusters
+        # If a selected point belongs to a cluster with only one point, we skip it and move on to the next furthest point.
         # Each empty cluster gets one point
         # We also need to update cluster_sizes
         if n_empty > 0:
-            far_samples_idx = np.argpartition(self.sample_centroids_closest_distance, -n_empty)[
-                : -n_empty - 1 : -1
-            ]
-            affected_clusters, counts = np.unique(
-                self.labels[far_samples_idx], return_counts=True
-            )
-            cluster_sizes[affected_clusters] -= counts
-            cluster_sizes[empty_clusters] = 1
-            self.labels[far_samples_idx] = empty_clusters
+            far_samples_idx = np.argsort(self.sample_centroids_closest_distance)[:: -1]
+            i, j = 0, 0
+            
+            while i < n_samples - n_empty and j < n_empty:
+                origin_cluster = self.labels[far_samples_idx[i]]
+                i += 1
+
+                if cluster_sizes[origin_cluster] == 1:
+                    continue
+
+                target_empty_cluster = empty_clusters[j]
+                cluster_sizes[origin_cluster] -= 1
+                cluster_sizes[target_empty_cluster] = 1
+                self.labels[far_samples_idx[i]] = target_empty_cluster
+                j += 1
+            
+            if i == n_samples - n_empty:
+                raise ValueError("Not enough distinct points to assign to empty clusters.")
 
         # Get the weight of each sample in its corresponding cluster
         weights = 1 / cluster_sizes

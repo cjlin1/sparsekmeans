@@ -2,7 +2,7 @@ from setuptools import setup
 
 PACKAGE_DIR = ["sparsekmeans"]
 PACKAGE_NAME = "sparsekmeans"
-VERSION = "0.1"
+VERSION = "0.2"
 
 
 # license parameters

@@ -12,7 +12,11 @@ pip install sparsekmeans
 
 ## Usage
 
-We support two popular K-means algorithms: Lloyd's method and Elkan's method. Use the following steps to cluster a data set:
+We support two popular K-means algorithms: Lloyd's method and Elkan's method. While both require distance calculations between data points and centroids, Elkan's method reduces some computations by exploiting information from the previous iteration, specifically using the triangle inequality to maintain two distance-related bounds.
+
+When the data set is small (e.g., the number of samples is less than 10,000), it is recommended to use Lloyd's. Lloyd's relies primarily on sparse matrix multiplications, whereas Elkan's mechanism to reduce distance calculations may cause non-negligible overhead for small problems. Conversely, for large data sets or the situation of a huge number of clusters (K), Elkan's method may significantly outperforms Lloyd's.
+
+Use the following steps to cluster a data set:
 
 ```
 from sparsekmeans import LloydKmeans, ElkanKmeans
